@@ -64,6 +64,13 @@ function initializeDatabase() {
 }
 
 // API Routes
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
 // Submit registration
 app.post('/api/register', (req, res) => {
@@ -226,15 +233,25 @@ app.get('/api/reports/weekly', (req, res) => {
 });
 
 // Serve HTML files from public folder
+
+// ✅ Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'OK', message: 'Server is running' });
+});
+
+// ✅ Root route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+// ✅ Catch-all route for React Router (if using client-side routing)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Main site: http://localhost:${PORT}`);
+    console.log(`Admin page: http://localhost:${PORT}/admin`);
 });
