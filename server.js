@@ -2,9 +2,49 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const cors = require('cors');
+const http = require('http');
+const WebSocket = require('ws');
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
 const PORT = process.env.PORT || 3000;
+
+// Store connected admin clients
+const adminClients = new Set();
+
+// WebSocket connection for real-time updates
+wss.on('connection', (ws) => {
+    console.log('New WebSocket connection');
+    
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            if (data.type === 'admin_connect') {
+                adminClients.add(ws);
+                console.log('Admin dashboard connected');
+            }
+        } catch (error) {
+            console.error('WebSocket message error:', error);
+        }
+    });
+
+    ws.on('close', () => {
+        adminClients.delete(ws);
+        console.log('WebSocket connection closed');
+    });
+});
+
+// Function to broadcast to all admin dashboards
+function broadcastToAdmins(data) {
+    const message = JSON.stringify(data);
+    adminClients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+        }
+    });
+}
 
 // Middleware
 app.use(cors());
@@ -62,6 +102,29 @@ function initializeDatabase() {
         accessTime DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 }
+
+//NEW API ROUTE
+
+// ✅ NEW: API endpoint for plate detection to report access attempts
+app.post('/api/realtime-access', (req, res) => {
+    const { licensePlate, status, vehicleInfo, timestamp, confidence } = req.body;
+    
+    console.log(`Real-time access: ${licensePlate} - ${status}`);
+    
+    // Broadcast to all connected admin dashboards
+    broadcastToAdmins({
+        type: 'access_attempt',
+        data: {
+            licensePlate,
+            status,
+            vehicleInfo,
+            timestamp: timestamp || new Date().toISOString(),
+            confidence
+        }
+    });
+    
+    res.json({ success: true });
+});
 
 // API Routes
 app.get('/admin', (req, res) => {
@@ -250,8 +313,7 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Main site: http://localhost:${PORT}`);
-    console.log(`Admin page: http://localhost:${PORT}/admin`);
+    console.log(`WebSocket server ready for real-time updates`);
 });
