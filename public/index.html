@@ -53,18 +53,7 @@
             100% { left: 100%; }
         }
         
-        .logo-placeholder {
-            background: rgba(255, 255, 255, 0.9);
-            border: 3px dashed #8B4513;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #8B4513;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
+        /* Logo image is provided directly via <img> in the header */
         
         .header h1 {
             color: white;
@@ -286,9 +275,8 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo-placeholder">
-            [SCHOOL LOGO]
-        </div>
+        <!-- Set your logo path below -->
+        <img src="images/logo.png" style="max-height:80px; margin-bottom:12px; object-fit:contain;" />
         <h1>UNIVERSITY OF ZAMBIA</h1>
         <p>Vehicle Registration System</p>
     </div>
@@ -384,6 +372,12 @@
                             <label for="vehicleCategory">Vehicle Category <span class="required">*</span></label>
                             <select id="vehicleCategory" required>
                                 <option value="">Select Category</option>
+                                <option value="Light passenger vehicle">Light passenger vehicle</option>
+                                <option value="Heavy passenger vehicle">Heavy passenger vehicle</option>
+                                <option value="Light goods vehicle">Light goods vehicle</option>
+                                <option value="Heavy goods vehicle">Heavy goods vehicle</option>
+                                <option value="Motorcycle">Motorcycle</option>
+                                <option value="Tricycle">Tricycle</option>
                                 <option value="Private">Private</option>
                                 <option value="Commercial">Commercial</option>
                                 <option value="Government">Government</option>
@@ -394,11 +388,14 @@
                             <label for="propelledBy">Propelled By <span class="required">*</span></label>
                             <select id="propelledBy" required>
                                 <option value="">Select Type</option>
+                                <option value="Self-propelled">Self-propelled</option>
                                 <option value="Petrol">Petrol</option>
                                 <option value="Diesel">Diesel</option>
                                 <option value="Electric">Electric</option>
                                 <option value="Hybrid">Hybrid</option>
                                 <option value="LPG">LPG</option>
+                                <option value="CNG">CNG (Compressed Natural Gas)</option>
+                                <option value="Biofuel">Biofuel</option>
                             </select>
                         </div>
                     </div>
@@ -475,7 +472,7 @@
             </div>
             
             <div class="admin-link">
-                <p>Administrator? <a href="admin.html">Access Admin Dashboard</a></p>
+                <p>Administrator? <a href="/admin">Access Admin Dashboard</a></p>
             </div>
         </div>
     </div>
@@ -483,6 +480,16 @@
     <script>
         document.getElementById('registrationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Validate form before submission
+            const missingFields = validateForm();
+            if (missingFields.length > 0) {
+                const statusMessage = document.getElementById('statusMessage');
+                statusMessage.style.display = 'block';
+                statusMessage.className = 'status-message error';
+                statusMessage.textContent = `Please fill in all required fields: ${missingFields.join(', ')}`;
+                return;
+            }
             
             // Show loading
             document.getElementById('loading').style.display = 'block';
@@ -508,7 +515,7 @@
                 propelledBy: document.getElementById('propelledBy').value,
                 netWeight: document.getElementById('netWeight').value,
                 gvmKg: document.getElementById('gvmKg').value,
-                class: document.getElementById('vehicleClass').value,
+                vehicleClass: document.getElementById('vehicleClass').value,
                 engineCapacity: document.getElementById('engineCapacity').value,
                 seatingCapacity: document.getElementById('seatingCapacity').value,
                 registrationAuthority: document.getElementById('registrationAuthority').value,
@@ -573,6 +580,79 @@
                 value = value.substring(0, 2) + '/' + value.substring(2, 5);
             }
             e.target.value = value;
+        });
+        
+        // Enhanced form validation
+        function validateForm() {
+            const requiredFields = [
+                'fullName', 'nationalRegistrationCard', 'licenseNumber', 'placeOfResidence', 'phoneNumber',
+                'licensePlateNumber', 'registrationMark', 'vinChassisNumber', 'engineNumber', 'make', 'model',
+                'modelNumber', 'color', 'vehicleCategory', 'propelledBy', 'netWeight', 'gvmKg', 'vehicleClass',
+                'engineCapacity', 'seatingCapacity', 'registrationAuthority', 'yearOfMake', 'firstRegistrationDate',
+                'customsClearanceNumber', 'interpolNumber'
+            ];
+            
+            const missingFields = [];
+            
+            requiredFields.forEach(field => {
+                const element = document.getElementById(field);
+                if (!element || !element.value.trim()) {
+                    missingFields.push(field);
+                }
+            });
+            
+            // Special validation for phone number
+            const phoneValue = document.getElementById('phoneNumber').value;
+            if (!phoneValue || phoneValue.length < 9) {
+                if (!missingFields.includes('phoneNumber')) {
+                    missingFields.push('phoneNumber');
+                }
+            }
+            
+            // Special validation for interpol number format
+            const interpolValue = document.getElementById('interpolNumber').value;
+            if (!interpolValue || !interpolValue.includes('/') || interpolValue.length < 4) {
+                if (!missingFields.includes('interpolNumber')) {
+                    missingFields.push('interpolNumber');
+                }
+            }
+            
+            return missingFields;
+        }
+        
+        // Add real-time validation
+        document.querySelectorAll('input[required], select[required]').forEach(field => {
+            field.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    this.style.borderColor = '#DC143C';
+                } else {
+                    this.style.borderColor = '#228B22';
+                }
+            });
+        });
+        
+        // Fix date input to allow proper day selection
+        document.getElementById('firstRegistrationDate').addEventListener('input', function(e) {
+            const dateValue = e.target.value;
+            if (dateValue) {
+                const [year, month, day] = dateValue.split('-');
+                const date = new Date(year, month - 1, day);
+                
+                // Check if the date is valid
+                if (date.getFullYear() != year || date.getMonth() != month - 1 || date.getDate() != day) {
+                    // Invalid date, reset to empty
+                    e.target.value = '';
+                    e.target.style.borderColor = '#DC143C';
+                } else {
+                    e.target.style.borderColor = '#228B22';
+                }
+            }
+        });
+        
+        // Set max date to today for first registration date
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('firstRegistrationDate').setAttribute('max', today);
         });
     </script>
 </body>
