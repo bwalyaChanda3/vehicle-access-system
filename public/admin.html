@@ -586,25 +586,94 @@
         });
         
         // WebSocket connection for real-time updates
-        let ws;
-        function connectWebSocket() {
-            ws = new WebSocket(`ws://${window.location.host}`);
-            
-            ws.onopen = function() {
-                console.log('WebSocket connected');
-            };
-            
-            ws.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                handleRealTimeUpdate(data);
-            };
-            
-            ws.onclose = function() {
-                console.log('WebSocket disconnected, attempting to reconnect...');
-                setTimeout(connectWebSocket, 3000);
-            };
-        }
+
+        // SIMPLE WebSocket connection
+let ws;
+
+function connectWebSocket() {
+    try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}`;
         
+        console.log('🔌 Connecting to WebSocket:', wsUrl);
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = function() {
+            console.log('✅ WebSocket CONNECTED');
+            // Identify as admin
+            ws.send(JSON.stringify({ type: 'admin_connect' }));
+            
+            // Show connection status
+            const container = document.getElementById('realtimeLogs');
+            if (container) {
+                container.innerHTML = '<div class="log-entry log-approved">✅ Connected to real-time system</div>';
+            }
+        };
+        
+        ws.onmessage = function(event) {
+            console.log('📨 WebSocket message:', event.data);
+            
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'access_attempt') {
+                    showAlertInMonitor(data.data);
+                }
+            } catch (e) {
+                console.error('Error parsing message:', e);
+            }
+        };
+        
+        ws.onclose = function() {
+            console.log('🔌 WebSocket disconnected - reconnecting in 3s');
+            setTimeout(connectWebSocket, 3000);
+        };
+        
+        ws.onerror = function(error) {
+            console.error('❌ WebSocket error:', error);
+        };
+        
+    } catch (error) {
+        console.error('❌ WebSocket connection failed:', error);
+    }
+}
+
+// SIMPLE alert display function
+function showAlertInMonitor(alertData) {
+    console.log('🔄 Showing alert:', alertData);
+    
+    const container = document.getElementById('realtimeLogs');
+    if (!container) {
+        console.error('❌ Cannot find realtimeLogs container!');
+        return;
+    }
+    
+    const alertDiv = document.createElement('div');
+    const time = new Date(alertData.timestamp).toLocaleTimeString();
+    const isRecognized = alertData.status === 'recognized' || alertData.status === 'approved';
+    
+    alertDiv.className = `log-entry ${isRecognized ? 'log-approved' : 'log-denied'}`;
+    alertDiv.innerHTML = `
+        <div class="log-time">${time} - 🚗 LIVE</div>
+        <div><strong>Plate:</strong> ${alertData.licensePlate}</div>
+        <div><strong>Status:</strong> ${isRecognized ? '✅ RECOGNIZED' : '❌ UNRECOGNIZED'}</div>
+        ${isRecognized && alertData.vehicleInfo ? `
+            <div><strong>Owner:</strong> ${alertData.vehicleInfo.ownerName}</div>
+            <div><strong>Vehicle:</strong> ${alertData.vehicleInfo.vehicleMake} ${alertData.vehicleInfo.vehicleModel}</div>
+        ` : ''}
+        <div><strong>Confidence:</strong> ${(alertData.confidence * 100).toFixed(1)}%</div>
+    `;
+    
+    // Add to top
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Keep only last 10
+    if (container.children.length > 10) {
+        container.removeChild(container.lastChild);
+    }
+    
+    console.log('✅ Alert displayed successfully');
+}
+
         // Handle real-time updates from server
         function handleRealTimeUpdate(data) {
             switch (data.type) {
