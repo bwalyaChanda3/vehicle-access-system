@@ -402,62 +402,6 @@
         }
     </style>
 </head>
-<script>
-// Auto-refresh registration requests every 10 seconds
-function loadRegistrationRequests() {
-    fetch('/api/registrations')
-        .then(response => response.json())
-        .then(registrations => {
-            const tbody = document.getElementById('requestsBody');
-            if (!tbody) return;
-            
-            tbody.innerHTML = '';
-            
-            registrations.forEach(reg => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${reg.fullName}</td>
-                    <td>${reg.phoneNumber}</td>
-                    <td>${reg.licensePlateNumber}</td>
-                    <td>${reg.color} ${reg.make} ${reg.model}</td>
-                    <td class="status-${reg.status}">${reg.status}</td>
-                    <td>
-                        ${reg.status === 'pending' ? 
-                            `<button class="btn btn-approve" onclick="updateStatus(${reg.id}, 'approved')">Approve</button>
-                             <button class="btn btn-reject" onclick="updateStatus(${reg.id}, 'rejected')">Reject</button>` : 
-                            'No actions available'
-                        }
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        })
-        .catch(error => console.error('Error loading requests:', error));
-}
-
-// Auto-refresh every 10 seconds when on registration requests tab
-setInterval(() => {
-    const activeTab = document.querySelector('.tab-content.active');
-    if (activeTab && activeTab.id === 'registrations') {
-        loadRegistrationRequests();
-    }
-}, 10000);
-
-// Also load when switching to registration tab
-document.addEventListener('DOMContentLoaded', function() {
-    const registrationTab = document.querySelector('[data-tab="registrations"]');
-    if (registrationTab) {
-        registrationTab.addEventListener('click', function() {
-            setTimeout(loadRegistrationRequests, 500);
-        });
-    }
-    
-    // Load initially if on registration tab
-    if (document.getElementById('registrations').classList.contains('active')) {
-        loadRegistrationRequests();
-    }
-});
-</script>
 <body>
     <div class="header">
         <div>
@@ -1077,6 +1021,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal.style.display = 'none';
             }
         }
+    </script>
+        <!-- ALL YOUR EXISTING SCRIPT CODE STAYS HERE -->
+
+    <!-- ADD AUTO-REFRESH SCRIPT RIGHT HERE, BEFORE CLOSING BODY TAG -->
+    <script>
+    // Auto-refresh registration requests every 10 seconds
+    function loadRegistrationRequests() {
+        fetch('/api/registrations')
+            .then(response => response.json())
+            .then(registrations => {
+                const tbody = document.getElementById('requestsBody');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                registrations.forEach(reg => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${reg.fullName}</td>
+                        <td>${reg.phoneNumber}</td>
+                        <td>${reg.licensePlateNumber}</td>
+                        <td>${reg.color} ${reg.make} ${reg.model}</td>
+                        <td class="status-${reg.status}">${reg.status}</td>
+                        <td>
+                            ${reg.status === 'pending' ? 
+                                `<button class="btn btn-approve" onclick="updateStatus(${reg.id}, 'approved')">Approve</button>
+                                 <button class="btn btn-reject" onclick="updateStatus(${reg.id}, 'rejected')">Reject</button>` : 
+                                'No actions available'
+                            }
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error loading requests:', error));
+    }
+
+    // Auto-refresh every 10 seconds when on registration requests tab
+    setInterval(() => {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && activeTab.id === 'registrations') {
+            loadRegistrationRequests();
+        }
+    }, 10000);
+
+    // Also load when switching to registration tab
+    document.addEventListener('DOMContentLoaded', function() {
+        const registrationTab = document.querySelector('[data-tab="registrations"]');
+        if (registrationTab) {
+            registrationTab.addEventListener('click', function() {
+                setTimeout(loadRegistrationRequests, 500);
+            });
+        }
+        
+        // Load initially if on registration tab
+        if (document.getElementById('registrations').classList.contains('active')) {
+            loadRegistrationRequests();
+        }
+    });
     </script>
 </body>
 </html>
